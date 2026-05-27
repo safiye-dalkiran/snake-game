@@ -63,20 +63,20 @@ canvas {
 }
 
 /* UI Katman Yönetimi (Mobil esnekliğe uyarlandı) */
+/* UI Katman Yönetimi (Ekranın tamamını kaplayan modern görünüm) */
 .overlay {
     position: absolute;
-    top: 10px;
-    /* Canvas border kalınlığı kadar içeride başlar */
-    left: 10px;
-    width: calc(100% - 20px);
-    /* Canvas küçüldükçe milimetrik olarak iç alana eşlenir */
-    height: calc(100% - 20px);
-    background-color: rgba(0, 0, 0, 0.85);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(5, 5, 5, 0.95); /* Arkadaki eski oyun kalıntılarını tamamen kapatan asil bir siyah */
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 8px; /* Kapsayıcının border-radius değerine tam uyum */
     transition: all 0.3s ease;
+    z-index: 30;
 }
 
 .screen {
