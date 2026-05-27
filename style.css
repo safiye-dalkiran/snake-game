@@ -1,118 +1,168 @@
-  /* html,
-        body {
-            height: 100%;
-            margin: 0;
-        }
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
 
-        body {
-            background-color: darkgray;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-        canvas {
-            border: 10px solid gray;
-            background-color: black;
-        }
-         */
-  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+body {
+    background-color: #1a1a1a;
+    color: #fff;
+    font-family: 'Courier Prime', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 10px;
+    overflow-x: hidden;
+    /* Mobilde sağa sola kaymayı önler */
+}
 
-  * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-  }
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    max-width: 620px;
+    /* Bilgisayarda orijinal boyutunu korur */
+}
 
-  body {
-      background-color: #1a1a1a;
-      color: #fff;
-      font-family: 'Courier Prime', monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-  }
+.score-board {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    /* Sabit 620px yerine esnek yapıldı */
+    padding: 10px 20px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff9800;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
 
-  .game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-  }
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    /* Sabit 620px kaldırıldı */
+    max-width: 620px;
+}
 
-  .score-board {
-      display: flex;
-      justify-content: space-between;
-      width: 620px;
-      padding: 10px 20px;
-      background-color: #2a2a2a;
-      border-radius: 8px;
-      font-size: 20px;
-      font-weight: bold;
-      color: #ff9800;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  }
+canvas {
+    width: 100%;
+    /* Telefonda ekran genişliğine göre otomatik küçülür */
+    height: auto;
+    border: 10px solid #333;
+    background-color: #050505;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: block;
+}
 
-  .canvas-wrapper {
-      position: relative;
-      width: 620px;
-      height: 620px;
-  }
+/* UI Katman Yönetimi (Mobil esnekliğe uyarlandı) */
+.overlay {
+    position: absolute;
+    top: 10px;
+    /* Canvas border kalınlığı kadar içeride başlar */
+    left: 10px;
+    width: calc(100% - 20px);
+    /* Canvas küçüldükçe milimetrik olarak iç alana eşlenir */
+    height: calc(100% - 20px);
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
 
-  canvas {
-      border: 10px solid #333;
-      background-color: #050505;
-      border-radius: 8px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  }
+.screen {
+    text-align: center;
+    padding: 10px;
+}
 
-  /* UI Katman Yönetimi */
-  .overlay {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 600px;
-      height: 600px;
-      background-color: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: -2px;
-      /* Canvas border'ın içine tam oturması için */
-      transition: all 0.3s ease;
-  }
+.screen h1 {
+    font-size: clamp(28px, 8vw, 45px);
+    /* Mobilde yazı boyutu otomatik küçülür */
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+    color: #4caf50;
+}
 
-  .screen {
-      text-align: center;
-  }
+.screen .game-over-title {
+    color: #f44336;
+}
 
-  .screen h1 {
-      font-size: 45px;
-      margin-bottom: 20px;
-      letter-spacing: 4px;
-      color: #4caf50;
-  }
+.screen p {
+    font-size: clamp(14px, 4vw, 18px);
+    color: #bbb;
+    margin-bottom: 5px;
+}
 
-  .screen .game-over-title {
-      color: #f44336;
-  }
+.screen span {
+    background-color: #333;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #fff;
+    border: 1px solid #555;
+}
 
-  .screen p {
-      font-size: 18px;
-      color: #bbb;
-  }
+.hidden {
+    display: none !important;
+}
 
-  .screen span {
-      background-color: #333;
-      padding: 2px 8px;
-      border-radius: 4px;
-      color: #fff;
-      border: 1px solid #555;
-  }
+/* 📱 D-Pad Sanal Tuş Tasarımı (Bilgisayarda varsayılan olarak gizli) */
+.mobile-controls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+    user-select: none;
+    width: 100%;
+}
 
-  .hidden {
-      display: none !important;
-  }
+.middle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    background-color: #222;
+    color: #fff;
+    border: 2px solid #4caf50;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 3px;
+    cursor: pointer;
+    transition: background 0.1s, transform 0.1s;
+    touch-action: manipulation;
+    /* Mobilde çift tıklama yakınlaştırma gecikmesini iptal eder */
+}
+
+.control-btn:active {
+    background-color: #4caf50;
+    transform: scale(0.9);
+}
+
+.spacer {
+    width: 60px;
+    height: 60px;
+    margin: 3px;
+}
+
+/* 📱 Medya Sorgusu: Sadece ekran genişliği 768px ve altındaysa butonları aç */
+@media (max-width: 768px) {
+    .mobile-controls {
+        display: flex;
+    }
+}

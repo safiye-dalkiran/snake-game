@@ -9,9 +9,27 @@ const uiOverlay = document.getElementById("ui-overlay");
 const startScreen = document.getElementById("start-screen");
 const gameOverScreen = document.getElementById("game-over-screen");
 const finalScoreEl = document.getElementById("final-score");
-//elma göseli
+// MOBİL DOKUNMATİK DİNLEYİCİLERİ
+const btnUp = document.getElementById("btn-up");
+const btnDown = document.getElementById("btn-down");
+const btnLeft = document.getElementById("btn-left");
+const btnRight = document.getElementById("btn-right");
+
+// Meyve Görselleri
 const elmaResmi = new Image();
-elmaResmi.src = "https://cdn-icons-png.flaticon.com/512/415/415733.png";
+elmaResmi.src = "image/elma.png";
+
+const curukResmi = new Image();
+curukResmi.src = "image/curuk.png";
+
+const tabakResmi = new Image();
+tabakResmi.src = "image/tabak.png";
+
+const altinResmi = new Image();
+altinResmi.src = "image/altin.png";
+
+// Ses Efektleri
+const yemSesi = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
 
 // Oyun Ayarları
 const sutun = 20;
@@ -22,33 +40,39 @@ let yon;
 let skor;
 let enYuksekSkor = localStorage.getItem("snake_high_score") || 0;
 let timerId = null;
+let curukTimerId = null; //  Çürük elmanın 6 saniyelik geri sayımı için
+let aktifYemler = [];    //  Ekrandaki aktif meyvelerin havuzu
 let yoneVerildi;
-let oyunHizi; // Dinamik hız değişkeni
+let oyunHizi;
 let oyunBasladi = false;
+yemSesi.preload = "auto";
+yemSesi.volume = 0.3;
 
-// İlk kurulum puan ekranı için
+// İlk kurulum puan ekranı için rekoru yazdır
 highScoreEl.textContent = formatSkor(enYuksekSkor);
 
 function oyunuHazirla() {
     sahneyiTemizle();
     skor = 0;
-    oyunHizi = 150; // Başlangıç hızı
+    oyunHizi = 220;
     yon = { x: 1, y: 0 };
+    aktifYemler = []; // Yem listesini sıfırla
+    if (curukTimerId) clearTimeout(curukTimerId); // Eski sayacı temizle
+
     yilanHazirla();
-    yemiHazirla();
+    yemleriHazirla(); // Doğru çoğul çağrı
     gen = canvas.width / sutun;
     yuk = canvas.height / satir;
 
     currentScoreEl.textContent = formatSkor(skor);
     yilaniCiz();
-    yemiCiz();
+    yemleriCiz(); // Doğru çoğul çağrı
 }
 
 function oyunuBaslat() {
     oyunBasladi = true;
     uiOverlay.classList.add("hidden");
     oyunuHazirla();
-    // Oyun döngüsünü başlat
     oyunDongusu();
 }
 
@@ -56,7 +80,6 @@ function oyunDongusu() {
     if (!oyunBasladi) return;
 
     hareket();
-    // Eğer oyun bitmediyse, güncel hız ile bir sonraki adımı tetikle
     if (oyunBasladi) {
         timerId = setTimeout(oyunDongusu, oyunHizi);
     }
@@ -68,41 +91,166 @@ function yilanHazirla() {
     yilan.push({ x: yilan[0].x - 2, y: yilan[0].y });
 }
 
-function yemiHazirla() {
+function yemleriHazirla() {
+    if (curukTimerId) {
+        clearTimeout(curukTimerId);
+    }
+
+    aktifYemler = [];
+    let yemTaze;
+
+    // 1. TAZE MEYVEYİ HAZIRLA
     do {
-        yem = { x: rastgele(sutun), y: rastgele(satir) };
-    } while (yilan.some(b => b.x === yem.x && b.y === yem.y));
+        let sans = Math.random();
+        let tur = "normal";
+
+        if (sans < 0.15) tur = "tabak";
+        else if (sans < 0.25) tur = "altin";
+        else tur = "normal";
+
+        yemTaze = {
+            x: rastgele(sutun),
+            y: rastgele(satir),
+            tur: tur
+        };
+    } while (yilan.some(b => b.x === yemTaze.x && b.y === yemTaze.y));
+
+    aktifYemler.push(yemTaze);
+
+    // 2. ÇÜRÜK ELMAYI HAZIRLA (%35 İHTİMAL)
+    if (Math.random() < 0.35) {
+        let yemCuruk;
+        do {
+            yemCuruk = {
+                x: rastgele(sutun),
+                y: rastgele(satir),
+                tur: "curuk"
+            };
+        } while (
+            yilan.some(b => b.x === yemCuruk.x && b.y === yemCuruk.y) ||
+            (yemCuruk.x === yemTaze.x && yemCuruk.y === yemTaze.y)
+        );
+
+        aktifYemler.push(yemCuruk);
+
+        //  6 saniye sonra çürük elmayı yok etme sayacı
+        curukTimerId = setTimeout(function () {
+            aktifYemler = aktifYemler.filter(yem => yem.tur !== "curuk");
+
+            sahneyiTemizle();
+            yilaniCiz();
+            yemleriCiz();
+        }, 6000);
+    }
 }
 
 function rastgele(max) {
     return Math.floor(Math.random() * max);
 }
 
+function sesCal(sesElementi) {
+    sesElementi.currentTime = 0;
+    sesElementi.play().catch(error => {
+        console.log("Ses çalma engellendi:", error);
+    });
+}
+
 function yilaniCiz() {
-    hucreCiz(yilan[0], "#4caf50"); // Baş kısmı
     let azaltma = 0.5 / (yilan.length - 1);
 
-    for (let i = 1; i < yilan.length; i++) {
+    for (let i = yilan.length - 1; i > 0; i--) {
         const bogum = yilan[i];
-        hucreCiz(bogum, `rgba(76, 175, 80, ${0.8 - i * azaltma})`);
+
+        let boyutOrani = 1 - (i / yilan.length) * 0.4;
+        let mevcutGen = gen * boyutOrani;
+        let mevcutYuk = yuk * boyutOrani;
+
+        let offsetX = (gen - mevcutGen) / 2;
+        let offsetY = (yuk - mevcutYuk) / 2;
+
+        let x = bogum.x * gen + offsetX;
+        let y = bogum.y * yuk + offsetY;
+
+        ctx.fillStyle = `rgba(76, 175, 80, ${0.8 - i * azaltma})`;
+
+        ctx.beginPath();
+        ctx.roundRect(x, y, mevcutGen, mevcutYuk, 8);
+        ctx.fill();
+    }
+
+    const kafa = yilan[0];
+    const kafaX = kafa.x * gen;
+    const kafaY = kafa.y * yuk;
+
+    ctx.fillStyle = "#388e3c";
+    ctx.beginPath();
+    ctx.arc(kafaX + gen / 2, kafaY + yuk / 2, gen / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    const gozYaricap = gen * 0.08;
+    ctx.fillStyle = "white";
+
+    if (yon.x === 1) {
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.7, kafaY + yuk * 0.3, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.7, kafaY + yuk * 0.7, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "black";
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.75, kafaY + yuk * 0.3, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.75, kafaY + yuk * 0.7, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+    } else if (yon.x === -1) {
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.3, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.7, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "black";
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.25, kafaY + yuk * 0.3, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.25, kafaY + yuk * 0.7, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+    } else if (yon.y === -1) {
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.3, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.6, kafaY + yuk * 0.3, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "black";
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.25, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.6, kafaY + yuk * 0.25, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+    } else if (yon.y === 1) {
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.7, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.6, kafaY + yuk * 0.7, gozYaricap, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "black";
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.3, kafaY + yuk * 0.75, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kafaX + gen * 0.6, kafaY + yuk * 0.75, gozYaricap * 0.5, 0, Math.PI * 2); ctx.fill();
     }
 }
 
-function yemiCiz() {
-    // ctx.fillRect yerine drawImage kullanıyoruz
-    // drawImage(resim, x_konumu, y_konumu, genişlik, yükseklik)
-    ctx.drawImage(
-        elmaResmi,
-        yem.x * gen,
-        yem.y * yuk,
-        gen - 1,
-        yuk - 1
-    );
+function yemleriCiz() {
+    const olcekOrani = 0.95;
+    const meyveGen = gen * olcekOrani;
+    const meyveYuk = yuk * olcekOrani;
+
+    const offsetX = (gen - meyveGen) / 2;
+    const offsetY = (yuk - meyveYuk) / 2;
+
+    aktifYemler.forEach(yem => {
+        let secilenResim;
+        let geciciRenk = "#ff5252";
+
+        if (yem.tur === "normal") { secilenResim = elmaResmi; geciciRenk = "#ff5252"; }
+        else if (yem.tur === "curuk") { secilenResim = curukResmi; geciciRenk = "#5d6d7e"; }
+        else if (yem.tur === "tabak") { secilenResim = tabakResmi; geciciRenk = "#9c27b0"; }
+        else if (yem.tur === "altin") { secilenResim = altinResmi; geciciRenk = "#ffb300"; }
+
+        if (!secilenResim || !secilenResim.complete) {
+            ctx.fillStyle = geciciRenk;
+            ctx.beginPath();
+            ctx.arc(yem.x * gen + gen / 2, yem.y * yuk + yuk / 2, gen / 2 - 2, 0, Math.PI * 2);
+            ctx.fill();
+            return;
+        }
+
+        const x = yem.x * gen + offsetX;
+        const y = yem.y * yuk + offsetY;
+        ctx.drawImage(secilenResim, x, y, meyveGen, meyveYuk);
+    });
 }
 
 function hucreCiz(konum, renk) {
     ctx.fillStyle = renk;
-    ctx.fillRect(konum.x * gen, konum.y * yuk, gen - 1, yuk - 1); // Hücreler arası hafif boşluk
+    ctx.fillRect(konum.x * gen, konum.y * yuk, gen - 1, yuk - 1);
 }
 
 function formatSkor(sayi) {
@@ -115,36 +263,70 @@ function hareket() {
         y: yilan[0].y + yon.y
     };
 
-    // Duvara veya kendine çarpma kontrolü
     if (yilanKendineCarptiMi(yeniBas) || yeniBas.x < 0 || yeniBas.y < 0 || yeniBas.x >= sutun || yeniBas.y >= satir) {
         oyunBitti();
         return;
     }
 
-    yilan.unshift(yeniBas);
+    let yenilenYemIndex = aktifYemler.findIndex(yem => yem.x === yeniBas.x && yem.y === yeniBas.y);
 
-    if (yeniBas.x === yem.x && yeniBas.y === yem.y) {
-        skor++;
+    if (yenilenYemIndex !== -1) {
+        const yenilenYem = aktifYemler[yenilenYemIndex];
+
+        if (yenilenYem.tur === "curuk") {
+            skor -= 1;
+            if (skor < 0) skor = 0;
+
+            yilan.unshift(yeniBas);
+            yilan.pop();
+            yilan.pop(); // KISALTMA AKTİF
+
+            if (yilan.length < 2) yilanHazirla();
+
+            aktifYemler.splice(yenilenYemIndex, 1);
+
+            if (curukTimerId) clearTimeout(curukTimerId);
+        }
+        else {
+            yilan.unshift(yeniBas);
+
+            if (yenilenYem.tur === "normal") {
+                skor += 1;
+            } else if (yenilenYem.tur === "altin") {
+                skor += 5;
+            } else if (yenilenYem.tur === "tabak") {
+                skor += 3;
+            }
+
+            yemleriHazirla();
+        }
+
         currentScoreEl.textContent = formatSkor(skor);
 
-        // Hız Kontrolü: Her yem yendiğinde yılanı %2 hızlandır (Minimum 60ms hıza kadar)
+        yemSesi.currentTime = 0;
+        yemSesi.play().catch(e => console.log("Ses engellendi:", e));
+
         if (oyunHizi > 60) {
             oyunHizi -= 4;
         }
-
-        yemiHazirla();
     } else {
+        yilan.unshift(yeniBas);
         yilan.pop();
     }
 
     sahneyiTemizle();
     yilaniCiz();
-    yemiCiz();
+    yemleriCiz();
     yoneVerildi = false;
 }
 
 function yilanKendineCarptiMi(yeniBas) {
-    return yilan.some(b => b.x === yeniBas.x && b.y === yeniBas.y);
+    // Aktif yem havuzuna göre çarpışma doğrulaması
+    let yemeGeldiMi = aktifYemler.some(yem => yem.x === yeniBas.x && yem.y === yeniBas.y);
+    if (yemeGeldiMi) {
+        return yilan.some(b => b.x === yeniBas.x && b.y === yeniBas.y);
+    }
+    return yilan.slice(0, -1).some(b => b.x === yeniBas.x && b.y === yeniBas.y);
 }
 
 function sahneyiTemizle() {
@@ -155,15 +337,14 @@ function sahneyiTemizle() {
 function oyunBitti() {
     oyunBasladi = false;
     clearTimeout(timerId);
+    if (curukTimerId) clearTimeout(curukTimerId);
 
-    // En yüksek skor kontrolü ve LocalStorage kaydı
     if (skor > enYuksekSkor) {
         enYuksekSkor = skor;
         localStorage.setItem("snake_high_score", enYuksekSkor);
         highScoreEl.textContent = formatSkor(enYuksekSkor);
     }
 
-    // Arayüzü güncelle
     finalScoreEl.textContent = skor;
     startScreen.classList.add("hidden");
     gameOverScreen.classList.remove("hidden");
@@ -171,7 +352,6 @@ function oyunBitti() {
 }
 
 function tusaBasildi(e) {
-    // Oyun başlamadıysa ve SPACE (32) tuşuna basıldıysa oyunu başlat
     if (!oyunBasladi && e.which === 32) {
         oyunuBaslat();
         return;
@@ -181,14 +361,13 @@ function tusaBasildi(e) {
 
     let yeniYon;
     switch (e.which) {
-        case 37: yeniYon = { x: -1, y: 0 }; break; // Sol
-        case 38: yeniYon = { x: 0, y: -1 }; break; // Üst
-        case 39: yeniYon = { x: 1, y: 0 }; break;  // Sağ
-        case 40: yeniYon = { x: 0, y: 1 }; break;  // Alt
+        case 37: yeniYon = { x: -1, y: 0 }; break;
+        case 38: yeniYon = { x: 0, y: -1 }; break;
+        case 39: yeniYon = { x: 1, y: 0 }; break;
+        case 40: yeniYon = { x: 0, y: 1 }; break;
         default: return;
     }
 
-    // Ters yöne dönme engeli
     if ((yeniYon.x && yon.x) || (yeniYon.y && yon.y)) return;
 
     yon = yeniYon;
@@ -196,7 +375,28 @@ function tusaBasildi(e) {
 }
 
 document.body.onkeydown = tusaBasildi;
-elmaResmi.onload = function () {
-    sahneyiTemizle();
-    yemiCiz();
-};
+
+// İlk kurguyu ayağa kaldır
+oyunuHazirla();
+function yonDegistir(yeniYon) {
+    if (!oyunBasladi) {
+        oyunuBaslat(); // Mobilde butonlara ilk basışta oyun başlasın
+        return;
+    }
+    if (yoneVerildi) return;
+    if ((yeniYon.x && yon.x) || (yeniYon.y && yon.y)) return; // Ters yön kilidi
+
+    yon = yeniYon;
+    yoneVerildi = true;
+}
+
+// Buton tetikleyicileri
+btnUp.addEventListener("click", () => yonDegistir({ x: 0, y: -1 }));
+btnDown.addEventListener("click", () => yonDegistir({ x: 0, y: 1 }));
+btnLeft.addEventListener("click", () => yonDegistir({ x: -1, y: 0 }));
+btnRight.addEventListener("click", () => yonDegistir({ x: 1, y: 0 }));
+
+// Siyah giriş/bitiş ekranlarına dokunulduğunda da oyunu başlat
+uiOverlay.addEventListener("click", () => {
+    if (!oyunBasladi) oyunuBaslat();
+});
