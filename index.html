@@ -19,24 +19,40 @@
             <div id="ui-overlay" class="overlay">
                 <div id="start-screen" class="screen">
                     <h1>SNAKE PRO</h1>
-                    <p>Başlamak için <span>SPACE</span>'e bas veya <strong>DOKUN</strong></p>
+
+                    <div class="color-picker-wrapper">
+                        <p>Yılanın Rengini Seç:</p>
+                        <div class="color-options">
+                            <div class="color-dot active" data-color="#388e3c" style="background-color: #4caf50;"></div>
+                            <div class="color-dot" data-color="#7b1fa2" style="background-color: #9c27b0;"></div>
+                            <div class="color-dot" data-color="#0288d1" style="background-color: #03a9f4;"></div>
+                            <div class="color-dot" data-color="#e64a19" style="background-color: #ff5722;"></div>
+                            <div class="color-dot" data-color="#c2185b" style="background-color: #e91e63;"></div>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-game" class="menu-btn">OYNA</button>
                 </div>
+
                 <div id="game-over-screen" class="screen hidden">
                     <h1 class="game-over-title">OYUN BİTTİ</h1>
-                    <p>Skorunuz: <span id="final-score">0</span></p>
-                    <p>Tekrar oyna: <span>SPACE</span> veya <strong>DOKUN</strong></p>
+                    <p style="margin-bottom: 20px;">Skorunuz: <span id="final-score">0</span></p>
+                    <div class="menu-btn-group">
+                        <button id="btn-restart-game" class="menu-btn restart">TEKRAR OYNA</button>
+                        <button id="btn-home" class="menu-btn home">ANA MENÜ</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="mobile-controls" class="mobile-controls">
-            <button id="btn-up" class="control-btn up">▲</button>
-            <div class="middle-row">
-                <button id="btn-left" class="control-btn left">◀</button>
-                <div class="spacer"></div>
-                <button id="btn-right" class="control-btn right">▶</button>
+            <div id="mobile-controls" class="mobile-controls">
+                <button id="btn-up" class="control-btn up">▲</button>
+                <div class="middle-row">
+                    <button id="btn-left" class="control-btn left">◀</button>
+                    <div class="spacer"></div>
+                    <button id="btn-right" class="control-btn right">▶</button>
+                </div>
+                <button id="btn-down" class="control-btn down">▼</button>
             </div>
-            <button id="btn-down" class="control-btn down">▼</button>
         </div>
     </div>
 

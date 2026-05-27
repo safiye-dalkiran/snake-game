@@ -82,6 +82,7 @@ canvas {
 .screen {
     text-align: center;
     padding: 10px;
+    width: 100%;
 }
 
 .screen h1 {
@@ -160,9 +161,133 @@ canvas {
     margin: 3px;
 }
 
-/* 📱 Medya Sorgusu: Sadece ekran genişliği 768px ve altındaysa butonları aç */
+/* ==========================================================================
+   🎨 RENK SEÇİCİ TASARIMI
+   ========================================================================== */
+.color-picker-wrapper {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 20; /* Siyah perdenin üstünde kalmasını garantiler */
+}
+
+.color-picker-wrapper p {
+    font-size: 15px;
+    color: #aaa;
+    letter-spacing: 1px;
+}
+
+.color-options {
+    display: flex;
+    gap: 15px;
+}
+
+.color-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #222;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.color-dot:hover {
+    transform: scale(1.15);
+}
+
+.color-dot.active {
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+    transform: scale(1.1);
+}
+
+/* ==========================================================================
+   🕹️ RETRO MENÜ BUTONLARI
+   ========================================================================== */
+.menu-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap; /* Sığmazsa aşağı kaysınlar */
+}
+
+.menu-btn {
+    font-family: 'Courier Prime', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 12px 30px;
+    background-color: #222;
+    color: #4caf50;
+    border: 3px solid #4caf50;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    margin-top: 10px;
+    position: relative;
+    z-index: 20;
+}
+
+.menu-btn:hover {
+    background-color: #4caf50;
+    color: #fff;
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.8);
+    transform: translateY(-2px);
+}
+
+.menu-btn:active {
+    transform: translateY(1px);
+}
+
+/* Tekrar Oyna Butonu (Kırmızı Neon Tema) */
+.menu-btn.restart {
+    color: #f44336;
+    border-color: #f44336;
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.4);
+}
+
+.menu-btn.restart:hover {
+    background-color: #f44336;
+    color: #fff;
+    box-shadow: 0 0 25px rgba(244, 67, 54, 0.8);
+}
+
+/* Ana Menü Buton Stili (Beyaz/Gri Neon Tema) */
+.menu-btn.home {
+    color: #b0bec5;
+    border-color: #b0bec5;
+    box-shadow: 0 0 15px rgba(176, 190, 197, 0.4);
+}
+
+.menu-btn.home:hover {
+    background-color: #b0bec5;
+    color: #1a1a1a;
+    box-shadow: 0 0 25px rgba(176, 190, 197, 0.8);
+}
+
+/* ==========================================================================
+   📱 RESPONSIVE & MEDYA SORGUSU 
+   ========================================================================== */
 @media (max-width: 768px) {
+    /* Sanal yön tuşlarını mobilde görünür yap */
     .mobile-controls {
         display: flex;
+    }
+
+    /* Mobilde "SPACE tuşuna bas veya" yazılarını tamamen gizle */
+    .pc-text {
+        display: none !important;
+    }
+
+    /* Butonları mobilde ekrana daha iyi sığacak şekilde büyüt */
+    .menu-btn {
+        width: 80%;
+        font-size: 22px;
+        padding: 15px 20px;
     }
 }

@@ -9,11 +9,20 @@ const uiOverlay = document.getElementById("ui-overlay");
 const startScreen = document.getElementById("start-screen");
 const gameOverScreen = document.getElementById("game-over-screen");
 const finalScoreEl = document.getElementById("final-score");
+
 // MOBİL DOKUNMATİK DİNLEYİCİLERİ
 const btnUp = document.getElementById("btn-up");
 const btnDown = document.getElementById("btn-down");
 const btnLeft = document.getElementById("btn-left");
 const btnRight = document.getElementById("btn-right");
+
+// 🔘 MENÜ BUTON TETİKLEYİCİLERİ
+const btnStartGame = document.getElementById("btn-start-game");
+const btnRestartGame = document.getElementById("btn-restart-game");
+const btnHome = document.getElementById("btn-home"); // 👈 Yeni eklendi
+
+// 🎨 RENK BUTONLARI DİNLEYİCİSİ
+const renkButonlari = document.querySelectorAll(".color-dot");
 
 // Meyve Görselleri
 const elmaResmi = new Image();
@@ -45,6 +54,8 @@ let aktifYemler = [];    //  Ekrandaki aktif meyvelerin havuzu
 let yoneVerildi;
 let oyunHizi;
 let oyunBasladi = false;
+let yilanRengi = "#388e3c"; // 🎨 Varsayılan yılan rengi (Klasik yeşil)
+
 yemSesi.preload = "auto";
 yemSesi.volume = 0.3;
 
@@ -60,18 +71,23 @@ function oyunuHazirla() {
     if (curukTimerId) clearTimeout(curukTimerId); // Eski sayacı temizle
 
     yilanHazirla();
-    yemleriHazirla(); // Doğru çoğul çağrı
+    yemleriHazirla();
     gen = canvas.width / sutun;
     yuk = canvas.height / satir;
 
     currentScoreEl.textContent = formatSkor(skor);
     yilaniCiz();
-    yemleriCiz(); // Doğru çoğul çağrı
+    yemleriCiz();
 }
 
 function oyunuBaslat() {
     oyunBasladi = true;
     uiOverlay.classList.add("hidden");
+
+    // Oyun başladığı an iki ekranı da içeride gizliyoruz ki bir sonraki tura temiz başlasın
+    startScreen.classList.add("hidden");
+    gameOverScreen.classList.add("hidden");
+
     oyunuHazirla();
     oyunDongusu();
 }
@@ -155,9 +171,21 @@ function sesCal(sesElementi) {
     });
 }
 
+// 🎨 HEX Kodunu RGB formatına çeviren sihirbaz fonksiyonu
+function hexToRgb(hex) {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : { r: 76, g: 175, b: 80 };
+}
+
 function yilaniCiz() {
+    let rgb = hexToRgb(yilanRengi);
     let azaltma = 0.5 / (yilan.length - 1);
 
+    // 1. GÖVDE ÇİZİMİ (Renk bağımsız saydamlaşma efekti)
     for (let i = yilan.length - 1; i > 0; i--) {
         const bogum = yilan[i];
 
@@ -171,22 +199,24 @@ function yilaniCiz() {
         let x = bogum.x * gen + offsetX;
         let y = bogum.y * yuk + offsetY;
 
-        ctx.fillStyle = `rgba(76, 175, 80, ${0.8 - i * azaltma})`;
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.8 - i * azaltma})`;
 
         ctx.beginPath();
         ctx.roundRect(x, y, mevcutGen, mevcutYuk, 8);
         ctx.fill();
     }
 
+    // 2. KAFA ÇİZİMİ
     const kafa = yilan[0];
     const kafaX = kafa.x * gen;
     const kafaY = kafa.y * yuk;
 
-    ctx.fillStyle = "#388e3c";
+    ctx.fillStyle = yilanRengi;
     ctx.beginPath();
     ctx.arc(kafaX + gen / 2, kafaY + yuk / 2, gen / 2, 0, Math.PI * 2);
     ctx.fill();
 
+    // 3. GÖZLER
     const gozYaricap = gen * 0.08;
     ctx.fillStyle = "white";
 
@@ -286,7 +316,7 @@ function hareket() {
             aktifYemler.splice(yenilenYemIndex, 1);
 
             if (curukTimerId) clearTimeout(curukTimerId);
-        }
+        } 
         else {
             yilan.unshift(yeniBas);
 
@@ -307,7 +337,7 @@ function hareket() {
         yemSesi.play().catch(e => console.log("Ses engellendi:", e));
 
         if (oyunHizi > 60) {
-            oyunHizi -= 4;
+            oyunHizi -= 3;
         }
     } else {
         yilan.unshift(yeniBas);
@@ -321,7 +351,6 @@ function hareket() {
 }
 
 function yilanKendineCarptiMi(yeniBas) {
-    // Aktif yem havuzuna göre çarpışma doğrulaması
     let yemeGeldiMi = aktifYemler.some(yem => yem.x === yeniBas.x && yem.y === yeniBas.y);
     if (yemeGeldiMi) {
         return yilan.some(b => b.x === yeniBas.x && b.y === yeniBas.y);
@@ -346,6 +375,8 @@ function oyunBitti() {
     }
 
     finalScoreEl.textContent = skor;
+
+    // Giriş ekranı kapalı kalıyor, sadece Oyun Bitti ekranı açılıyor (Sıkışma çözüldü!)
     startScreen.classList.add("hidden");
     gameOverScreen.classList.remove("hidden");
     uiOverlay.classList.remove("hidden");
@@ -378,13 +409,14 @@ document.body.onkeydown = tusaBasildi;
 
 // İlk kurguyu ayağa kaldır
 oyunuHazirla();
+
 function yonDegistir(yeniYon) {
     if (!oyunBasladi) {
-        oyunuBaslat(); // Mobilde butonlara ilk basışta oyun başlasın
+        oyunuBaslat();
         return;
     }
     if (yoneVerildi) return;
-    if ((yeniYon.x && yon.x) || (yeniYon.y && yon.y)) return; // Ters yön kilidi
+    if ((yeniYon.x && yon.x) || (yeniYon.y && yon.y)) return;
 
     yon = yeniYon;
     yoneVerildi = true;
@@ -396,7 +428,38 @@ btnDown.addEventListener("click", () => yonDegistir({ x: 0, y: 1 }));
 btnLeft.addEventListener("click", () => yonDegistir({ x: -1, y: 0 }));
 btnRight.addEventListener("click", () => yonDegistir({ x: 1, y: 0 }));
 
-// Siyah giriş/bitiş ekranlarına dokunulduğunda da oyunu başlat
-uiOverlay.addEventListener("click", () => {
+btnStartGame.addEventListener("click", (e) => {
+    e.stopPropagation();
     if (!oyunBasladi) oyunuBaslat();
+});
+
+btnRestartGame.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!oyunBasladi) oyunuBaslat();
+});
+
+// 🏠 ANA MENÜ BUTON TETİKLEYİCİSİ
+btnHome.addEventListener("click", (e) => {
+    e.stopPropagation();
+    gameOverScreen.classList.add("hidden");
+    startScreen.classList.remove("hidden");
+    oyunuHazirla(); // Arkadaki yılanı ilk pozisyona getirip temizler
+});
+
+// 🎨 RENK SEÇİM ALANININ ÇALIŞTIRILMASI
+renkButonlari.forEach(buton => {
+    buton.addEventListener("click", (e) => {
+        e.stopPropagation(); // Tıklamanın arkadaki overlay'i tetiklemesini önler
+
+        const aktifOlan = document.querySelector(".color-dot.active");
+        if (aktifOlan) aktifOlan.classList.remove("active");
+
+        buton.classList.add("active");
+
+        // Rengi al ve yılanı Canvas'ta anlık güncelle
+        yilanRengi = buton.getAttribute("data-color");
+        sahneyiTemizle();
+        yilaniCiz();
+        yemleriCiz();
+    });
 });
