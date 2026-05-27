@@ -206,13 +206,13 @@ canvas {
 }
 
 /* ==========================================================================
-   🕹️ RETRO MENÜ BUTONLARI
+   RETRO MENÜ BUTONLARI
    ========================================================================== */
 .menu-btn-group {
     display: flex;
     justify-content: center;
     gap: 15px;
-    flex-wrap: wrap; /* Sığmazsa aşağı kaysınlar */
+    flex-wrap: wrap;
 }
 
 .menu-btn {
@@ -271,20 +271,17 @@ canvas {
 }
 
 /* ==========================================================================
-   📱 RESPONSIVE & MEDYA SORGUSU 
+    RESPONSIVE & MEDYA SORGUSU 
    ========================================================================== */
 @media (max-width: 768px) {
-    /* Sanal yön tuşlarını mobilde görünür yap */
     .mobile-controls {
         display: flex;
     }
 
-    /* Mobilde "SPACE tuşuna bas veya" yazılarını tamamen gizle */
     .pc-text {
         display: none !important;
     }
 
-    /* Butonları mobilde ekrana daha iyi sığacak şekilde büyüt */
     .menu-btn {
         width: 80%;
         font-size: 22px;

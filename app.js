@@ -16,12 +16,12 @@ const btnDown = document.getElementById("btn-down");
 const btnLeft = document.getElementById("btn-left");
 const btnRight = document.getElementById("btn-right");
 
-// 🔘 MENÜ BUTON TETİKLEYİCİLERİ
+//  MENÜ BUTON TETİKLEYİCİLERİ
 const btnStartGame = document.getElementById("btn-start-game");
 const btnRestartGame = document.getElementById("btn-restart-game");
 const btnHome = document.getElementById("btn-home"); // 👈 Yeni eklendi
 
-// 🎨 RENK BUTONLARI DİNLEYİCİSİ
+//  RENK BUTONLARI DİNLEYİCİSİ
 const renkButonlari = document.querySelectorAll(".color-dot");
 
 // Meyve Görselleri
@@ -37,6 +37,9 @@ tabakResmi.src = "image/tabak.png";
 const altinResmi = new Image();
 altinResmi.src = "image/altin.png";
 
+const iksirResmi = new Image(); // 🧪 İksir görselini belleğe ekliyoruz
+iksirResmi.src = "image/celery.png";
+
 // Ses Efektleri
 const yemSesi = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
 
@@ -50,16 +53,17 @@ let skor;
 let enYuksekSkor = localStorage.getItem("snake_high_score") || 0;
 let timerId = null;
 let curukTimerId = null; //  Çürük elmanın 6 saniyelik geri sayımı için
+let iksirTimerId = null; //  İksirin 7 saniyelik zaman sayacı için yeni değişken
 let aktifYemler = [];    //  Ekrandaki aktif meyvelerin havuzu
 let yoneVerildi;
 let oyunHizi;
 let oyunBasladi = false;
-let yilanRengi = "#388e3c"; // 🎨 Varsayılan yılan rengi (Klasik yeşil)
+let yilanRengi = "#388e3c"; // Varsayılan yılan rengi
 
 yemSesi.preload = "auto";
 yemSesi.volume = 0.3;
 
-// İlk kurulum puan ekranı için rekoru yazdır
+// İlk kurulum puan ekranı için rekor
 highScoreEl.textContent = formatSkor(enYuksekSkor);
 
 function oyunuHazirla() {
@@ -69,11 +73,12 @@ function oyunuHazirla() {
     yon = { x: 1, y: 0 };
     aktifYemler = []; // Yem listesini sıfırla
     if (curukTimerId) clearTimeout(curukTimerId); // Eski sayacı temizle
+    if (iksirTimerId) clearTimeout(iksirTimerId); // Eski iksir sayacını temizle
 
     yilanHazirla();
-    yemleriHazirla();
     gen = canvas.width / sutun;
     yuk = canvas.height / satir;
+    yemleriHazirla(); // Gen ve yuk değerlerinden sonra çağrılması daha güvenlidir
 
     currentScoreEl.textContent = formatSkor(skor);
     yilaniCiz();
@@ -83,8 +88,6 @@ function oyunuHazirla() {
 function oyunuBaslat() {
     oyunBasladi = true;
     uiOverlay.classList.add("hidden");
-
-    // Oyun başladığı an iki ekranı da içeride gizliyoruz ki bir sonraki tura temiz başlasın
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
 
@@ -108,30 +111,34 @@ function yilanHazirla() {
 }
 
 function yemleriHazirla() {
-    if (curukTimerId) {
-        clearTimeout(curukTimerId);
+    if (curukTimerId) clearTimeout(curukTimerId);
+    if (iksirTimerId) clearTimeout(iksirTimerId); // Zamanlayıcıları sıfırla
+
+    // Havuzda sadece temel meyveleri tut, eski çürük ve iksirleri süpür
+    aktifYemler = aktifYemler.filter(yem => yem.tur === "normal" || yem.tur === "tabak" || yem.tur === "altin");
+
+    // Ekranda taze meyve yoksa baştan üret (Oyun başı veya meyve yenildiğinde)
+    if (aktifYemler.length === 0) {
+        let yemTaze;
+        do {
+            let sans = Math.random();
+            let tur = "normal";
+
+            if (sans < 0.15) tur = "tabak";
+            else if (sans < 0.25) tur = "altin";
+            else tur = "normal";
+
+            yemTaze = {
+                x: rastgele(sutun),
+                y: rastgele(satir),
+                tur: tur
+            };
+        } while (yilan.some(b => b.x === yemTaze.x && b.y === yemTaze.y));
+
+        aktifYemler.push(yemTaze);
     }
 
-    aktifYemler = [];
-    let yemTaze;
-
-    // 1. TAZE MEYVEYİ HAZIRLA
-    do {
-        let sans = Math.random();
-        let tur = "normal";
-
-        if (sans < 0.15) tur = "tabak";
-        else if (sans < 0.25) tur = "altin";
-        else tur = "normal";
-
-        yemTaze = {
-            x: rastgele(sutun),
-            y: rastgele(satir),
-            tur: tur
-        };
-    } while (yilan.some(b => b.x === yemTaze.x && b.y === yemTaze.y));
-
-    aktifYemler.push(yemTaze);
+    const tazeMeyve = aktifYemler[0];
 
     // 2. ÇÜRÜK ELMAYI HAZIRLA (%35 İHTİMAL)
     if (Math.random() < 0.35) {
@@ -144,7 +151,7 @@ function yemleriHazirla() {
             };
         } while (
             yilan.some(b => b.x === yemCuruk.x && b.y === yemCuruk.y) ||
-            (yemCuruk.x === yemTaze.x && yemCuruk.y === yemTaze.y)
+            (yemCuruk.x === tazeMeyve.x && yemCuruk.y === tazeMeyve.y)
         );
 
         aktifYemler.push(yemCuruk);
@@ -157,6 +164,33 @@ function yemleriHazirla() {
             yilaniCiz();
             yemleriCiz();
         }, 6000);
+    }
+
+    // 🧪 3. SİHİRLİ İKSİRİ HAZIRLA
+    // Kural: Skor 45'ten büyükse ve şans %35 ise haritada iksir belirir
+    if (skor > 45 && Math.random() < 0.35) {
+        let yemIksir;
+        do {
+            yemIksir = {
+                x: rastgele(sutun),
+                y: rastgele(satir),
+                tur: "iksir"
+            };
+        } while (
+            yilan.some(b => b.x === yemIksir.x && b.y === yemIksir.y) ||
+            aktifYemler.some(yem => yem.x === yemIksir.x && yem.y === yemIksir.y)
+        );
+
+        aktifYemler.push(yemIksir);
+
+        // İksir 7 saniye sonra kendi kendine yok olsun (Oyuncu isterse almaz)
+        iksirTimerId = setTimeout(function () {
+            aktifYemler = aktifYemler.filter(yem => yem.tur !== "iksir");
+
+            sahneyiTemizle();
+            yilaniCiz();
+            yemleriCiz();
+        }, 7000); // 7 saniye
     }
 }
 
@@ -171,7 +205,7 @@ function sesCal(sesElementi) {
     });
 }
 
-// 🎨 HEX Kodunu RGB formatına çeviren sihirbaz fonksiyonu
+//  HEX Kodunu RGB formatına çevir
 function hexToRgb(hex) {
     let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -263,6 +297,7 @@ function yemleriCiz() {
         else if (yem.tur === "curuk") { secilenResim = curukResmi; geciciRenk = "#5d6d7e"; }
         else if (yem.tur === "tabak") { secilenResim = tabakResmi; geciciRenk = "#9c27b0"; }
         else if (yem.tur === "altin") { secilenResim = altinResmi; geciciRenk = "#ffb300"; }
+        else if (yem.tur === "iksir") { secilenResim = iksirResmi; geciciRenk = "#00bcd4"; } // 🧪 Yedek renk turkuaz
 
         if (!secilenResim || !secilenResim.complete) {
             ctx.fillStyle = geciciRenk;
@@ -316,7 +351,24 @@ function hareket() {
             aktifYemler.splice(yenilenYemIndex, 1);
 
             if (curukTimerId) clearTimeout(curukTimerId);
-        } 
+        }
+        else if (yenilenYem.tur === "iksir") {
+            // 🧪 SİHİRLİ İKSİR ETKİSİ:
+            // Skor sabit kalır, yılanın 3'te 1'i gider, 3'te 2'si kalır!
+            yilan.unshift(yeniBas);
+
+            let yeniBoyut = Math.floor(yilan.length * (2 / 3));
+            if (yeniBoyut < 3) yeniBoyut = 3; // Başlangıç boyutunun altına inerek ölmesin
+
+            yilan.splice(yeniBoyut); // Kalan kuyruğu kesip atıyoruz
+
+            // Havuzdan iksiri kaldır ve zamanlayıcısını sil
+            aktifYemler.splice(yenilenYemIndex, 1);
+            if (iksirTimerId) clearTimeout(iksirTimerId);
+
+            // Taze meyveye dokunmuyoruz, havuzun kalan durumuna göre tazeliyoruz
+            yemleriHazirla();
+        }
         else {
             yilan.unshift(yeniBas);
 
@@ -328,6 +380,8 @@ function hareket() {
                 skor += 3;
             }
 
+            // Taze meyve yenince havuzu tamamen sıfırla ki yenisi gelsin
+            aktifYemler = [];
             yemleriHazirla();
         }
 
@@ -367,6 +421,7 @@ function oyunBitti() {
     oyunBasladi = false;
     clearTimeout(timerId);
     if (curukTimerId) clearTimeout(curukTimerId);
+    if (iksirTimerId) clearTimeout(iksirTimerId); // Oyun bitince iksir sayacını kapat
 
     if (skor > enYuksekSkor) {
         enYuksekSkor = skor;
@@ -376,7 +431,7 @@ function oyunBitti() {
 
     finalScoreEl.textContent = skor;
 
-    // Giriş ekranı kapalı kalıyor, sadece Oyun Bitti ekranı açılıyor (Sıkışma çözüldü!)
+    // Giriş ekranı kapalı kalıyor, sadece Oyun Bitti ekranı açılıyor 
     startScreen.classList.add("hidden");
     gameOverScreen.classList.remove("hidden");
     uiOverlay.classList.remove("hidden");
@@ -438,7 +493,7 @@ btnRestartGame.addEventListener("click", (e) => {
     if (!oyunBasladi) oyunuBaslat();
 });
 
-// 🏠 ANA MENÜ BUTON TETİKLEYİCİSİ
+//  ANA MENÜ BUTON TETİKLEYİCİSİ
 btnHome.addEventListener("click", (e) => {
     e.stopPropagation();
     gameOverScreen.classList.add("hidden");
@@ -446,7 +501,7 @@ btnHome.addEventListener("click", (e) => {
     oyunuHazirla(); // Arkadaki yılanı ilk pozisyona getirip temizler
 });
 
-// 🎨 RENK SEÇİM ALANININ ÇALIŞTIRILMASI
+//  RENK SEÇİM ALANININ ÇALIŞTIRILMASI
 renkButonlari.forEach(buton => {
     buton.addEventListener("click", (e) => {
         e.stopPropagation(); // Tıklamanın arkadaki overlay'i tetiklemesini önler
