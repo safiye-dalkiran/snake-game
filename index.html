@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Snake Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="score-board">
+            <div>SKOR: <span id="current-score">000</span></div>
+            <div>EN YÜKSEK: <span id="high-score">000</span></div>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="600" height="600"></canvas>
+            <div id="ui-overlay" class="overlay">
+                <div id="start-screen" class="screen">
+                    <h1>SNAKE PRO</h1>
+                    <p>Başlamak için <span>SPACE</span> tuşuna bas</p>
+                </div>
+                <div id="game-over-screen" class="screen hidden">
+                    <h1 class="game-over-title">OYUN BİTTİ</h1>
+                    <p>Skorunuz: <span id="final-score">0</span></p>
+                    <p>Tekrar oyna: <span>SPACE</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+<script src="app.js"></script>
+
+</html>

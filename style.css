@@ -1,0 +1,118 @@
+  /* html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            background-color: darkgray;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            border: 10px solid gray;
+            background-color: black;
+        }
+         */
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
+  * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+  }
+
+  body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: 'Courier Prime', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+  }
+
+  .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+  }
+
+  .score-board {
+      display: flex;
+      justify-content: space-between;
+      width: 620px;
+      padding: 10px 20px;
+      background-color: #2a2a2a;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ff9800;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .canvas-wrapper {
+      position: relative;
+      width: 620px;
+      height: 620px;
+  }
+
+  canvas {
+      border: 10px solid #333;
+      background-color: #050505;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  /* UI Katman Yönetimi */
+  .overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 600px;
+      height: 600px;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: -2px;
+      /* Canvas border'ın içine tam oturması için */
+      transition: all 0.3s ease;
+  }
+
+  .screen {
+      text-align: center;
+  }
+
+  .screen h1 {
+      font-size: 45px;
+      margin-bottom: 20px;
+      letter-spacing: 4px;
+      color: #4caf50;
+  }
+
+  .screen .game-over-title {
+      color: #f44336;
+  }
+
+  .screen p {
+      font-size: 18px;
+      color: #bbb;
+  }
+
+  .screen span {
+      background-color: #333;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+      border: 1px solid #555;
+  }
+
+  .hidden {
+      display: none !important;
+  }
