@@ -19,26 +19,18 @@ const btnRight = document.getElementById("btn-right");
 //  MENÜ BUTON TETİKLEYİCİLERİ
 const btnStartGame = document.getElementById("btn-start-game");
 const btnRestartGame = document.getElementById("btn-restart-game");
-const btnHome = document.getElementById("btn-home"); // 👈 Yeni eklendi
+const btnHome = document.getElementById("btn-home");
 
 //  RENK BUTONLARI DİNLEYİCİSİ
 const renkButonlari = document.querySelectorAll(".color-dot");
 
 // Meyve Görselleri
-const elmaResmi = new Image();
-elmaResmi.src = "image/elma.png";
-
-const curukResmi = new Image();
-curukResmi.src = "image/curuk.png";
-
-const tabakResmi = new Image();
-tabakResmi.src = "image/tabak.png";
-
-const altinResmi = new Image();
-altinResmi.src = "image/altin.png";
-
-const iksirResmi = new Image(); // 🧪 İksir görselini belleğe ekliyoruz
-iksirResmi.src = "image/celery.png";
+const elmaResmi = new Image(); elmaResmi.src = "image/elma.png";
+const curukResmi = new Image(); curukResmi.src = "image/curuk.png";
+const tabakResmi = new Image(); tabakResmi.src = "image/tabak.png";
+const altinResmi = new Image(); altinResmi.src = "image/altin.png";
+const iksirResmi = new Image(); iksirResmi.src = "image/celery.png"; 
+const patatesResmi = new Image(); patatesResmi.src = "image/patates.png"; 
 
 // Ses Efektleri
 const yemSesi = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
@@ -52,13 +44,17 @@ let yon;
 let skor;
 let enYuksekSkor = localStorage.getItem("snake_high_score") || 0;
 let timerId = null;
-let curukTimerId = null; //  Çürük elmanın 6 saniyelik geri sayımı için
-let iksirTimerId = null; //  İksirin 7 saniyelik zaman sayacı için yeni değişken
-let aktifYemler = [];    //  Ekrandaki aktif meyvelerin havuzu
+let curukTimerId = null;
+let iksirTimerId = null;
+let patatesTimerId = null; // ⏳ Patatesin 5 saniyelik zaman sayacı
+let aktifYemler = [];
 let yoneVerildi;
 let oyunHizi;
 let oyunBasladi = false;
-let yilanRengi = "#388e3c"; // Varsayılan yılan rengi
+let yilanRengi = "#388e3c";
+
+// 🌀 Portal Kapı Girişleri (Satırların tam ortasındaki 3 kare: 9, 10, 11)
+const portalSatirlari = [9, 10, 11];
 
 yemSesi.preload = "auto";
 yemSesi.volume = 0.3;
@@ -71,14 +67,15 @@ function oyunuHazirla() {
     skor = 0;
     oyunHizi = 220;
     yon = { x: 1, y: 0 };
-    aktifYemler = []; // Yem listesini sıfırla
-    if (curukTimerId) clearTimeout(curukTimerId); // Eski sayacı temizle
-    if (iksirTimerId) clearTimeout(iksirTimerId); // Eski iksir sayacını temizle
+    aktifYemler = [];
+    if (curukTimerId) clearTimeout(curukTimerId);
+    if (iksirTimerId) clearTimeout(iksirTimerId);
+    if (patatesTimerId) clearTimeout(patatesTimerId);
 
     yilanHazirla();
     gen = canvas.width / sutun;
     yuk = canvas.height / satir;
-    yemleriHazirla(); // Gen ve yuk değerlerinden sonra çağrılması daha güvenlidir
+    yemleriHazirla();
 
     currentScoreEl.textContent = formatSkor(skor);
     yilaniCiz();
@@ -112,13 +109,14 @@ function yilanHazirla() {
 
 function yemleriHazirla() {
     if (curukTimerId) clearTimeout(curukTimerId);
-    if (iksirTimerId) clearTimeout(iksirTimerId); // Zamanlayıcıları sıfırla
+    if (iksirTimerId) clearTimeout(iksirTimerId);
 
-    // Havuzda sadece temel meyveleri tut, eski çürük ve iksirleri süpür
-    aktifYemler = aktifYemler.filter(yem => yem.tur === "normal" || yem.tur === "tabak" || yem.tur === "altin");
+    // Havuzdaki patatesi koru, eski süresi dolan çürük ve kerevizleri uçur
+    aktifYemler = aktifYemler.filter(yem => yem.tur === "normal" || yem.tur === "tabak" || yem.tur === "altin" || yem.tur === "patates");
 
-    // Ekranda taze meyve yoksa baştan üret (Oyun başı veya meyve yenildiğinde)
-    if (aktifYemler.length === 0) {
+    // Ekranda taze ana meyve yoksa baştan üret
+    const anaMeyveVarMi = aktifYemler.some(yem => yem.tur === "normal" || yem.tur === "tabak" || yem.tur === "altin");
+    if (!anaMeyveVarMi) {
         let yemTaze;
         do {
             let sans = Math.random();
@@ -128,54 +126,37 @@ function yemleriHazirla() {
             else if (sans < 0.25) tur = "altin";
             else tur = "normal";
 
-            yemTaze = {
-                x: rastgele(sutun),
-                y: rastgele(satir),
-                tur: tur
-            };
+            yemTaze = { x: rastgele(sutun), y: rastgele(satir), tur: tur };
         } while (yilan.some(b => b.x === yemTaze.x && b.y === yemTaze.y));
 
         aktifYemler.push(yemTaze);
     }
 
-    const tazeMeyve = aktifYemler[0];
+    const anaMeyve = aktifYemler.find(yem => yem.tur === "normal" || yem.tur === "tabak" || yem.tur === "altin");
 
     // 2. ÇÜRÜK ELMAYI HAZIRLA (%35 İHTİMAL)
     if (Math.random() < 0.35) {
         let yemCuruk;
         do {
-            yemCuruk = {
-                x: rastgele(sutun),
-                y: rastgele(satir),
-                tur: "curuk"
-            };
+            yemCuruk = { x: rastgele(sutun), y: rastgele(satir), tur: "curuk" };
         } while (
             yilan.some(b => b.x === yemCuruk.x && b.y === yemCuruk.y) ||
-            (yemCuruk.x === tazeMeyve.x && yemCuruk.y === tazeMeyve.y)
+            (anaMeyve && yemCuruk.x === anaMeyve.x && yemCuruk.y === anaMeyve.y)
         );
 
         aktifYemler.push(yemCuruk);
 
-        //  6 saniye sonra çürük elmayı yok etme sayacı
         curukTimerId = setTimeout(function () {
             aktifYemler = aktifYemler.filter(yem => yem.tur !== "curuk");
-
-            sahneyiTemizle();
-            yilaniCiz();
-            yemleriCiz();
+            sahneyiTemizle(); yilaniCiz(); yemleriCiz();
         }, 6000);
     }
 
-    // 🧪 3. SİHİRLİ İKSİRİ HAZIRLA
-    // Kural: Skor 45'ten büyükse ve şans %35 ise haritada iksir belirir
+    // 🥦 3. KEREVİZ DİYET ETKİSİ (Skor > 45, %35 İhtimal)
     if (skor > 45 && Math.random() < 0.35) {
         let yemIksir;
         do {
-            yemIksir = {
-                x: rastgele(sutun),
-                y: rastgele(satir),
-                tur: "iksir"
-            };
+            yemIksir = { x: rastgele(sutun), y: rastgele(satir), tur: "iksir" };
         } while (
             yilan.some(b => b.x === yemIksir.x && b.y === yemIksir.y) ||
             aktifYemler.some(yem => yem.x === yemIksir.x && yem.y === yemIksir.y)
@@ -183,14 +164,33 @@ function yemleriHazirla() {
 
         aktifYemler.push(yemIksir);
 
-        // İksir 7 saniye sonra kendi kendine yok olsun (Oyuncu isterse almaz)
         iksirTimerId = setTimeout(function () {
             aktifYemler = aktifYemler.filter(yem => yem.tur !== "iksir");
+            sahneyiTemizle(); yilaniCiz(); yemleriCiz();
+        }, 7000);
+    }
 
-            sahneyiTemizle();
-            yilaniCiz();
-            yemleriCiz();
-        }, 7000); // 7 saniye
+    // 🍟 4. PATATES KIZARTMASI YAVAŞLATICI (Skor > 30, %15 İhtimal)
+    if (skor > 50 && Math.random() < 0.15) {
+        const patatesVarMi = aktifYemler.some(yem => yem.tur === "patates");
+        if (!patatesVarMi) {
+            let yemPatates;
+            do {
+                yemPatates = { x: rastgele(sutun), y: rastgele(satir), tur: "patates" };
+            } while (
+                yilan.some(b => b.x === yemPatates.x && b.y === yemPatates.y) ||
+                aktifYemler.some(yem => yem.x === yemPatates.x && yem.y === yemPatates.y)
+            );
+
+            aktifYemler.push(yemPatates);
+
+            // Yeni patates gelirken eski zamanlayıcıyı güvenle sıfırlıyoruz 
+            if (patatesTimerId) clearTimeout(patatesTimerId);
+            patatesTimerId = setTimeout(function () {
+                aktifYemler = aktifYemler.filter(yem => yem.tur !== "patates");
+                sahneyiTemizle(); yilaniCiz(); yemleriCiz();
+            }, 5000);
+        }
     }
 }
 
@@ -198,14 +198,6 @@ function rastgele(max) {
     return Math.floor(Math.random() * max);
 }
 
-function sesCal(sesElementi) {
-    sesElementi.currentTime = 0;
-    sesElementi.play().catch(error => {
-        console.log("Ses çalma engellendi:", error);
-    });
-}
-
-//  HEX Kodunu RGB formatına çevir
 function hexToRgb(hex) {
     let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -219,14 +211,11 @@ function yilaniCiz() {
     let rgb = hexToRgb(yilanRengi);
     let azaltma = 0.5 / (yilan.length - 1);
 
-    // 1. GÖVDE ÇİZİMİ (Renk bağımsız saydamlaşma efekti)
     for (let i = yilan.length - 1; i > 0; i--) {
         const bogum = yilan[i];
-
         let boyutOrani = 1 - (i / yilan.length) * 0.4;
         let mevcutGen = gen * boyutOrani;
         let mevcutYuk = yuk * boyutOrani;
-
         let offsetX = (gen - mevcutGen) / 2;
         let offsetY = (yuk - mevcutYuk) / 2;
 
@@ -234,13 +223,11 @@ function yilaniCiz() {
         let y = bogum.y * yuk + offsetY;
 
         ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.8 - i * azaltma})`;
-
         ctx.beginPath();
         ctx.roundRect(x, y, mevcutGen, mevcutYuk, 8);
         ctx.fill();
     }
 
-    // 2. KAFA ÇİZİMİ
     const kafa = yilan[0];
     const kafaX = kafa.x * gen;
     const kafaY = kafa.y * yuk;
@@ -250,7 +237,6 @@ function yilaniCiz() {
     ctx.arc(kafaX + gen / 2, kafaY + yuk / 2, gen / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. GÖZLER
     const gozYaricap = gen * 0.08;
     ctx.fillStyle = "white";
 
@@ -285,7 +271,6 @@ function yemleriCiz() {
     const olcekOrani = 0.95;
     const meyveGen = gen * olcekOrani;
     const meyveYuk = yuk * olcekOrani;
-
     const offsetX = (gen - meyveGen) / 2;
     const offsetY = (yuk - meyveYuk) / 2;
 
@@ -297,7 +282,8 @@ function yemleriCiz() {
         else if (yem.tur === "curuk") { secilenResim = curukResmi; geciciRenk = "#5d6d7e"; }
         else if (yem.tur === "tabak") { secilenResim = tabakResmi; geciciRenk = "#9c27b0"; }
         else if (yem.tur === "altin") { secilenResim = altinResmi; geciciRenk = "#ffb300"; }
-        else if (yem.tur === "iksir") { secilenResim = iksirResmi; geciciRenk = "#00bcd4"; } // 🧪 Yedek renk turkuaz
+        else if (yem.tur === "iksir") { secilenResim = iksirResmi; geciciRenk = "#00bcd4"; }
+        else if (yem.tur === "patates") { secilenResim = patatesResmi; geciciRenk = "#ffeb3b"; } // 🍟 Patates Sarısı
 
         if (!secilenResim || !secilenResim.complete) {
             ctx.fillStyle = geciciRenk;
@@ -313,9 +299,24 @@ function yemleriCiz() {
     });
 }
 
-function hucreCiz(konum, renk) {
-    ctx.fillStyle = renk;
-    ctx.fillRect(konum.x * gen, konum.y * yuk, gen - 1, yuk - 1);
+function portallariCiz() {
+    ctx.strokeStyle = "#00bcd4";
+    ctx.lineWidth = 5;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#00bcd4";
+
+    portalSatirlari.forEach(sira => {
+        ctx.beginPath();
+        ctx.moveTo(0, sira * yuk);
+        ctx.lineTo(0, (sira + 1) * yuk);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(canvas.width, sira * yuk);
+        ctx.lineTo(canvas.width, (sira + 1) * yuk);
+        ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
 }
 
 function formatSkor(sayi) {
@@ -328,7 +329,29 @@ function hareket() {
         y: yilan[0].y + yon.y
     };
 
-    if (yilanKendineCarptiMi(yeniBas) || yeniBas.x < 0 || yeniBas.y < 0 || yeniBas.x >= sutun || yeniBas.y >= satir) {
+    if (yeniBas.y < 0 || yeniBas.y >= satir) {
+        oyunBitti();
+        return;
+    }
+
+    // Portal kapısı geçiş mekanizması
+    if (yeniBas.x >= sutun) {
+        if (portalSatirlari.includes(yeniBas.y)) {
+            yeniBas.x = 0;
+        } else {
+            oyunBitti();
+            return;
+        }
+    } else if (yeniBas.x < 0) {
+        if (portalSatirlari.includes(yeniBas.y)) {
+            yeniBas.x = sutun - 1;
+        } else {
+            oyunBitti();
+            return;
+        }
+    }
+
+    if (yilanKendineCarptiMi(yeniBas)) {
         oyunBitti();
         return;
     }
@@ -344,53 +367,56 @@ function hareket() {
 
             yilan.unshift(yeniBas);
             yilan.pop();
-            yilan.pop(); // KISALTMA AKTİF
+            yilan.pop();
 
             if (yilan.length < 2) yilanHazirla();
-
             aktifYemler.splice(yenilenYemIndex, 1);
-
             if (curukTimerId) clearTimeout(curukTimerId);
         }
         else if (yenilenYem.tur === "iksir") {
-            // 🧪 SİHİRLİ İKSİR ETKİSİ:
-            // Skor sabit kalır, yılanın 3'te 1'i gider, 3'te 2'si kalır!
             yilan.unshift(yeniBas);
 
             let yeniBoyut = Math.floor(yilan.length * (2 / 3));
-            if (yeniBoyut < 3) yeniBoyut = 3; // Başlangıç boyutunun altına inerek ölmesin
+            if (yeniBoyut < 3) yeniBoyut = 3;
 
-            yilan.splice(yeniBoyut); // Kalan kuyruğu kesip atıyoruz
-
-            // Havuzdan iksiri kaldır ve zamanlayıcısını sil
+            yilan.splice(yeniBoyut);
             aktifYemler.splice(yenilenYemIndex, 1);
             if (iksirTimerId) clearTimeout(iksirTimerId);
+            yemleriHazirla();
+        }
+        else if (yenilenYem.tur === "patates") {
+            // Patates kızartması o anki hızı %50 yavaşlatır
+            yilan.unshift(yeniBas);
 
-            // Taze meyveye dokunmuyoruz, havuzun kalan durumuna göre tazeliyoruz
+            // Mevcut hızı %50 oranında artırarak yavaşlatıyoruz
+            oyunHizi = Math.floor(oyunHizi * 1.5);
+
+            // Oyun hızının başlangıç hızından (220) daha yavaş olmamasını garanti ediyoruz
+            if (oyunHizi > 220) {
+                oyunHizi = 220;
+            }
+
+            aktifYemler.splice(yenilenYemIndex, 1);
+            if (patatesTimerId) clearTimeout(patatesTimerId);
             yemleriHazirla();
         }
         else {
             yilan.unshift(yeniBas);
+            if (yenilenYem.tur === "normal") skor += 1;
+            else if (yenilenYem.tur === "altin") skor += 5;
+            else if (yenilenYem.tur === "tabak") skor += 3;
 
-            if (yenilenYem.tur === "normal") {
-                skor += 1;
-            } else if (yenilenYem.tur === "altin") {
-                skor += 5;
-            } else if (yenilenYem.tur === "tabak") {
-                skor += 3;
-            }
-
-            // Taze meyve yenince havuzu tamamen sıfırla ki yenisi gelsin
-            aktifYemler = [];
+            // Diğer taze yemler yenince patatesi havuzdan güvenle izole ediyoruz 
+            aktifYemler = aktifYemler.filter(yem => yem.tur === "patates");
             yemleriHazirla();
         }
 
         currentScoreEl.textContent = formatSkor(skor);
-
         yemSesi.currentTime = 0;
-        yemSesi.play().catch(e => console.log("Ses engellendi:", e));
+        yemSesi.play().catch(e => console.log(e));
 
-        if (oyunHizi > 60) {
+        // Patates yenmediği sürece her normal yemde yılan hızlanmaya devam eder
+        if (yenilenYem.tur !== "patates" && oyunHizi > 60) {
             oyunHizi -= 3;
         }
     } else {
@@ -401,6 +427,7 @@ function hareket() {
     sahneyiTemizle();
     yilaniCiz();
     yemleriCiz();
+    portallariCiz();
     yoneVerildi = false;
 }
 
@@ -421,7 +448,8 @@ function oyunBitti() {
     oyunBasladi = false;
     clearTimeout(timerId);
     if (curukTimerId) clearTimeout(curukTimerId);
-    if (iksirTimerId) clearTimeout(iksirTimerId); // Oyun bitince iksir sayacını kapat
+    if (iksirTimerId) clearTimeout(iksirTimerId);
+    if (patatesTimerId) clearTimeout(patatesTimerId);
 
     if (skor > enYuksekSkor) {
         enYuksekSkor = skor;
@@ -430,8 +458,6 @@ function oyunBitti() {
     }
 
     finalScoreEl.textContent = skor;
-
-    // Giriş ekranı kapalı kalıyor, sadece Oyun Bitti ekranı açılıyor 
     startScreen.classList.add("hidden");
     gameOverScreen.classList.remove("hidden");
     uiOverlay.classList.remove("hidden");
@@ -461,8 +487,6 @@ function tusaBasildi(e) {
 }
 
 document.body.onkeydown = tusaBasildi;
-
-// İlk kurguyu ayağa kaldır
 oyunuHazirla();
 
 function yonDegistir(yeniYon) {
@@ -477,7 +501,6 @@ function yonDegistir(yeniYon) {
     yoneVerildi = true;
 }
 
-// Buton tetikleyicileri
 btnUp.addEventListener("click", () => yonDegistir({ x: 0, y: -1 }));
 btnDown.addEventListener("click", () => yonDegistir({ x: 0, y: 1 }));
 btnLeft.addEventListener("click", () => yonDegistir({ x: -1, y: 0 }));
@@ -493,28 +516,26 @@ btnRestartGame.addEventListener("click", (e) => {
     if (!oyunBasladi) oyunuBaslat();
 });
 
-//  ANA MENÜ BUTON TETİKLEYİCİSİ
 btnHome.addEventListener("click", (e) => {
     e.stopPropagation();
     gameOverScreen.classList.add("hidden");
     startScreen.classList.remove("hidden");
-    oyunuHazirla(); // Arkadaki yılanı ilk pozisyona getirip temizler
+    oyunuHazirla();
 });
 
-//  RENK SEÇİM ALANININ ÇALIŞTIRILMASI
 renkButonlari.forEach(buton => {
     buton.addEventListener("click", (e) => {
-        e.stopPropagation(); // Tıklamanın arkadaki overlay'i tetiklemesini önler
+        e.stopPropagation();
 
         const aktifOlan = document.querySelector(".color-dot.active");
         if (aktifOlan) aktifOlan.classList.remove("active");
 
         buton.classList.add("active");
 
-        // Rengi al ve yılanı Canvas'ta anlık güncelle
         yilanRengi = buton.getAttribute("data-color");
         sahneyiTemizle();
         yilaniCiz();
         yemleriCiz();
+        portallariCiz();
     });
 });

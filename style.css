@@ -40,7 +40,7 @@ body {
     border-radius: 8px;
     font-size: 20px;
     font-weight: bold;
-    color: #ff9800;
+    color: #4caf50;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -70,11 +70,13 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(5, 5, 5, 0.95); /* Arkadaki eski oyun kalıntılarını tamamen kapatan asil bir siyah */
+    background-color: rgba(5, 5, 5, 0.95);
+    /* Arkadaki eski oyun kalıntılarını tamamen kapatan asil bir siyah */
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px; /* Kapsayıcının border-radius değerine tam uyum */
+    border-radius: 8px;
+    /* Kapsayıcının border-radius değerine tam uyum */
     transition: all 0.3s ease;
     z-index: 30;
 }
@@ -171,7 +173,8 @@ canvas {
     align-items: center;
     gap: 12px;
     position: relative;
-    z-index: 20; /* Siyah perdenin üstünde kalmasını garantiler */
+    z-index: 20;
+    /* Siyah perdenin üstünde kalmasını garantiler */
 }
 
 .color-picker-wrapper p {
@@ -286,5 +289,34 @@ canvas {
         width: 80%;
         font-size: 22px;
         padding: 15px 20px;
+    }
+}
+
+
+/* ANA MENÜ RESİM İKONU VE ANİMASYONU*/
+.menu-icon-wrapper {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu-snake-img {
+    width: clamp(80px, 20vw, 120px);
+    height: auto;
+    filter: drop-shadow(0 0 15px rgba(76, 175, 80, 0.6));
+    animation: yilanResimSüzül 3s ease-in-out infinite;
+}
+
+@keyframes yilanResimSüzül {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.03);
+        filter: drop-shadow(0 0 25px rgba(76, 175, 80, 0.85));
     }
 }
